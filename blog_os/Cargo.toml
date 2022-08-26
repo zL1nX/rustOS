@@ -6,16 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bootloader = "0.9.18" 
+# the newsest version  0.10.12 causes errors
 
 # 由于no_std环境中, 原有的用于在编译器fail时创建栈展开环境的eh_personality语言项也没有被实现
 # 因此, 我们需要手动禁用栈展开, 因为反正现阶段我们也无需通过复杂的异常处理机制和栈展开来实现父进程的运行 
 # https://manishearth.github.io/blog/2017/01/11/rust-tidbits-what-is-a-lang-item/,  https://stackoverflow.com/questions/48982154/where-is-eh-personality-called
 
 
-# 对应cargo build
-[profile.dev]
-panic = "abort"
+# # 对应cargo build
+# [profile.dev]
+# panic = "abort"
 
-# 对应cargo build --release
-[profile.release]
-panic = "abort"
+# # 对应cargo build --release
+# [profile.release]
+# panic = "abort"
