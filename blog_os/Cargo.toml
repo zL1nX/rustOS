@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 bootloader = "0.9.18" 
+volatile = "0.2.7"
 # the newsest version  0.10.12 causes errors
 
 # 由于no_std环境中, 原有的用于在编译器fail时创建栈展开环境的eh_personality语言项也没有被实现

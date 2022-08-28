@@ -1,3 +1,6 @@
+use volatile::Volatile;
+use core::fmt;
+
 // VGA字符缓冲区是一个25行 x 80列的二维数组, 每个元素一个16bit长
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
@@ -45,7 +48,7 @@ struct ScreenChar{
 
 #[repr(transparent)]
 struct Buffer {
-    chars : [[ScreenChar ; BUFFER_WIDTH]; BUFFER_HEIGHT],
+    chars : [[Volatile<ScreenChar> ; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 /*
@@ -78,10 +81,11 @@ impl Writer {
 
                 let row: usize = BUFFER_HEIGHT - 1; // 从最后一行写, 最终输出是在终端的最下面显示
                 let col: usize = self.column_pos;
-                self.buffer.chars[row][col] = ScreenChar {
+                let wb = ScreenChar {
                     ascii_code: byte,
                     color_code: self.color_code
                 };
+                self.buffer.chars[row][col].write(wb);
 
                 self.column_pos += 1;
             }
@@ -92,33 +96,45 @@ impl Writer {
         /*
         通过n^2的循环把整个buffer内的字符向上平移一行
         */
-        // for r in 1..BUFFER_HEIGHT {
-        //     for c in 0..BUFFER_WIDTH {
-        //         let ch = self.buffer.chars[r][c]; // why .read() ?
-        //         self.buffer.chars[r - 1][c] = ch;
-        //     }
-        // }
-        // self.clear_row(BUFFER_HEIGHT - 1);
-        // self.column_pos = 0;
+        for r in 1..BUFFER_HEIGHT {
+            for c in 0..BUFFER_WIDTH {
+                let ch = self.buffer.chars[r][c].read(); // why .read() ?
+                self.buffer.chars[r - 1][c].write(ch);
+            }
+        }
+        self.clear_row(BUFFER_HEIGHT - 1);
+        self.column_pos = 0;
     }
 
     fn clear_row(&mut self, row: usize) {
-        // for col in 0..BUFFER_WIDTH {
-        //     self.buffer.chars[row][col] = ScreenChar {
-        //         ascii_code : b' ',
-        //         color_code : self.color_code,
-        //     };
-        // }
+        let blank = ScreenChar {
+            ascii_code : b' ',
+            color_code : self.color_code,
+        };
+        for col in 0..BUFFER_WIDTH {
+            self.buffer.chars[row][col].write(blank);
+        }
     }
 }
 
+// 实现这个Write的trait以支持格式化输出各种类型的变量
+impl fmt::Write for Writer {
+    fn write_str(&mut self, s : &str)-> fmt::Result {
+        self.write_string(s);
+        Ok(())
+    }
+}
+
+// 实现该trait之后, 就可以使用write!与writeln!等格式化宏实现各种复杂格式的输出了
 
 pub fn print_test() {
+    use core::fmt::Write;
     let mut writer : Writer = Writer{
         column_pos : 0,
-        color_code : ColorCode::new(Color::Blue, Color::Black),
+        color_code : ColorCode::new(Color::Yellow, Color::Black),
         buffer : unsafe { &mut *(0xb8000 as *mut Buffer) }, // 先将b8000转换成Buffer指针, 然后再转换成可变引用&mut
     };
     writer.write_byte(b'H');
     writer.write_string("ello, world !");
+    write!(writer, "The {} {}", 42, 1.0/3.0).unwrap() ; //向正常的write 函数一样向一个writer对象写入字符串
 }

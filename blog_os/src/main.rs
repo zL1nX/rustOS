@@ -5,7 +5,7 @@ use core::panic::PanicInfo;
 
 mod vga_buffer;
 
-static HELLO :&[u8] = b"Hello World!";
+//static HELLO :&[u8] = b"Hello World!";
 
 
 // 由于去掉了no_std环境, 导致我们也不能用默认的Rust Runtime crt0来让程序初始化
