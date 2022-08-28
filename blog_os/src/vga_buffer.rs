@@ -1,0 +1,124 @@
+// VGA字符缓冲区是一个25行 x 80列的二维数组, 每个元素一个16bit长
+const BUFFER_HEIGHT: usize = 25;
+const BUFFER_WIDTH: usize = 80;
+
+#[allow(dead_code)] // 每个未使用的变量发出警告
+#[derive(Debug, Clone, Copy, PartialEq, Eq)] // derive these traits
+#[repr(u8)] // 标注枚举的类型是u8
+pub enum Color {
+    Black = 0,
+    Blue = 1,
+    Green = 2,
+    Cyan = 3,
+    Red = 4,
+    Magenta = 5,
+    Brown = 6,
+    LightGray = 7,
+    DarkGray = 8,
+    LightBlue = 9,
+    LightGreen = 10,
+    LightCyan = 11,
+    LightRed = 12,
+    Pink = 13,
+    Yellow = 14,
+    White = 15,
+}
+// Color type is an atomic type
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(transparent)] // make sure the layout of ColorCode is the same as u8 (i.e. a byte), 只适用于single field struct
+struct ColorCode(u8);
+// ColorCode, based on Color, is the functional type of displaying colors
+impl ColorCode {
+    // 结构体的关联函数
+    fn new(foreground : Color, background : Color) -> ColorCode {
+        ColorCode((background as u8) << 4 | (foreground as u8))
+    } // 前4位是背景色, 后四位是前景色
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)] // 按照C语言约定的顺序布局结构体成员变量
+struct ScreenChar{
+    ascii_code : u8,
+    color_code : ColorCode
+}
+
+#[repr(transparent)]
+struct Buffer {
+    chars : [[ScreenChar ; BUFFER_WIDTH]; BUFFER_HEIGHT],
+}
+
+/*
+目前已经有了VGA缓冲区这一层中间结构了, 下面我们希望实现该如何"从缓冲区XXXXX
+*/
+
+pub struct Writer {
+    column_pos : usize, // 光标在屏幕最后一行的位置 (当前输入下一个字符的位置)
+    color_code : ColorCode,
+    buffer : &'static mut Buffer // static全局生命周期
+}
+
+impl Writer {
+    pub fn write_string(&mut self, s : &str) {
+        for b in s.bytes() {
+            match b {
+                0x20..=0x7e | b'\n' => self.write_byte(b), // 只考虑可打印字符
+                _ => self.write_byte(0xfe) // ■ VGA硬件编码中的一个字符来指示那些不可打印字符
+            }
+        }
+    }
+
+    pub fn write_byte(&mut self, byte : u8) {
+        match byte {
+            b'\n' => self.new_line(),
+            byte => { // 设置字符, 目前仅写, 但还没有print
+                if self.column_pos >= BUFFER_WIDTH {
+                    self.new_line(); // 通过newline来为最后一行腾出空来
+                }
+
+                let row: usize = BUFFER_HEIGHT - 1; // 从最后一行写, 最终输出是在终端的最下面显示
+                let col: usize = self.column_pos;
+                self.buffer.chars[row][col] = ScreenChar {
+                    ascii_code: byte,
+                    color_code: self.color_code
+                };
+
+                self.column_pos += 1;
+            }
+        }
+    }
+
+    fn new_line(&mut self) {
+        /*
+        通过n^2的循环把整个buffer内的字符向上平移一行
+        */
+        // for r in 1..BUFFER_HEIGHT {
+        //     for c in 0..BUFFER_WIDTH {
+        //         let ch = self.buffer.chars[r][c]; // why .read() ?
+        //         self.buffer.chars[r - 1][c] = ch;
+        //     }
+        // }
+        // self.clear_row(BUFFER_HEIGHT - 1);
+        // self.column_pos = 0;
+    }
+
+    fn clear_row(&mut self, row: usize) {
+        // for col in 0..BUFFER_WIDTH {
+        //     self.buffer.chars[row][col] = ScreenChar {
+        //         ascii_code : b' ',
+        //         color_code : self.color_code,
+        //     };
+        // }
+    }
+}
+
+
+pub fn print_test() {
+    let mut writer : Writer = Writer{
+        column_pos : 0,
+        color_code : ColorCode::new(Color::Blue, Color::Black),
+        buffer : unsafe { &mut *(0xb8000 as *mut Buffer) }, // 先将b8000转换成Buffer指针, 然后再转换成可变引用&mut
+    };
+    writer.write_byte(b'H');
+    writer.write_string("ello, world !");
+}
