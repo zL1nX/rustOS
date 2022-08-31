@@ -9,9 +9,8 @@ mod vga_buffer;
 // 因此我们需要重新定义一个自己的入口点
 #[no_mangle] // name mangling, 这一选项防止编译器对函数签名进行重整, 导致链接器无法识别这一自定义入口
 pub extern "C" fn _start()-> !{
-    use core::fmt::Write;
-    vga_buffer::WRITER.lock().write_str("Hello WRITER").unwrap(); // 直接使用WRITER进行读写
-    writeln!(vga_buffer::WRITER.lock(), " some numbers: {} {}", 42, 1.0/3.0).unwrap();
+    println!("Hello world from println {}", "!"); // 可正常使用println宏
+    panic!("Some panic message");
     loop {}
 }
 
@@ -25,10 +24,6 @@ pub extern "C" fn _start()-> !{
 #[panic_handler]
 fn panic(_info: &PanicInfo)->! {
     // PanicInfo includes panic_file, panic_lineno, available_error_message
+    println!("{}", _info); // we can print some info (no actual content)
     loop{} // for now
 }
-
-
-// fn main() {
-//     //println!("Hello, world!");
-// }

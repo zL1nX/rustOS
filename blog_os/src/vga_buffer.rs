@@ -140,3 +140,24 @@ impl fmt::Write for Writer {
 // 实现该trait之后, 就可以使用write!与writeln!等格式化宏实现各种复杂格式的输出了
 
 //定义全局WRITER后, 就无需再vga_buffer中定义一个测试函数供外部使用了
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => ($crate::vga_buffer::_print(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}
+
+// 和标准的print!宏与println!宏实现基本相同, 但使用了$crate来让println可以单独调用print
+
+#[doc(hidden)] // _print是私有自定义函数, 但迫于宏导出得设置为pub, 因此干脆只让文档隐藏算了
+pub fn _print(args: fmt::Arguments) {
+    use core::fmt::Write;
+    WRITER.lock().write_fmt(args).unwrap();
+}
+
+// 自定义的_print函数调用write_fmt这个trait传入参数
