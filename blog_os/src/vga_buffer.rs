@@ -1,5 +1,7 @@
 use volatile::Volatile;
 use core::fmt;
+use lazy_static::lazy_static;
+use spin::Mutex;
 
 // VGA字符缓冲区是一个25行 x 80列的二维数组, 每个元素一个16bit长
 const BUFFER_HEIGHT: usize = 25;
@@ -60,6 +62,16 @@ pub struct Writer {
     color_code : ColorCode,
     buffer : &'static mut Buffer // static全局生命周期
 }
+
+lazy_static! {
+    pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer { // static ref ,只需引用即可, 否则会发生所有权转移
+        column_pos : 0,
+        color_code : ColorCode::new(Color::Yellow, Color::Black),
+        buffer : unsafe { &mut *(0xb8000 as *mut Buffer) }, // 先将b8000转换成Buffer指针, 然后再转换成可变引用&mut
+    });
+}
+// 用Mutex互斥锁来实现多线程Sync条件下的内部可变性, 从而能在全局项目中使用Writer写入数据
+
 
 impl Writer {
     pub fn write_string(&mut self, s : &str) {
@@ -127,14 +139,4 @@ impl fmt::Write for Writer {
 
 // 实现该trait之后, 就可以使用write!与writeln!等格式化宏实现各种复杂格式的输出了
 
-pub fn print_test() {
-    use core::fmt::Write;
-    let mut writer : Writer = Writer{
-        column_pos : 0,
-        color_code : ColorCode::new(Color::Yellow, Color::Black),
-        buffer : unsafe { &mut *(0xb8000 as *mut Buffer) }, // 先将b8000转换成Buffer指针, 然后再转换成可变引用&mut
-    };
-    writer.write_byte(b'H');
-    writer.write_string("ello, world !");
-    write!(writer, "The {} {}", 42, 1.0/3.0).unwrap() ; //向正常的write 函数一样向一个writer对象写入字符串
-}
+//定义全局WRITER后, 就无需再vga_buffer中定义一个测试函数供外部使用了

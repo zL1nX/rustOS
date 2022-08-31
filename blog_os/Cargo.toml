@@ -8,7 +8,13 @@ edition = "2021"
 [dependencies]
 bootloader = "0.9.18" 
 volatile = "0.2.7"
+spin = "0.5.1" # use the simplest lock
 # the newsest version  0.10.12 causes errors
+
+[dependencies.lazy_static]
+version = "1.0"
+features = ["spin_no_std"]
+# to ease the use of global static var with non-const functions
 
 # 由于no_std环境中, 原有的用于在编译器fail时创建栈展开环境的eh_personality语言项也没有被实现
 # 因此, 我们需要手动禁用栈展开, 因为反正现阶段我们也无需通过复杂的异常处理机制和栈展开来实现父进程的运行 

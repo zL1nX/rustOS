@@ -5,23 +5,13 @@ use core::panic::PanicInfo;
 
 mod vga_buffer;
 
-//static HELLO :&[u8] = b"Hello World!";
-
-
 // 由于去掉了no_std环境, 导致我们也不能用默认的Rust Runtime crt0来让程序初始化
 // 因此我们需要重新定义一个自己的入口点
 #[no_mangle] // name mangling, 这一选项防止编译器对函数签名进行重整, 导致链接器无法识别这一自定义入口
 pub extern "C" fn _start()-> !{
-    // let vga_buffer: *mut u8 = 0xb8000 as *mut u8; // 
-    // for (i, &byte) in HELLO.iter().enumerate() {
-    //     unsafe {
-    //         // 
-    //         *vga_buffer.offset(i as isize * 2) = byte; // 
-    //         *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
-    //     }
-    // }
-    
-    vga_buffer::print_test();
+    use core::fmt::Write;
+    vga_buffer::WRITER.lock().write_str("Hello WRITER").unwrap(); // 直接使用WRITER进行读写
+    writeln!(vga_buffer::WRITER.lock(), " some numbers: {} {}", 42, 1.0/3.0).unwrap();
     loop {}
 }
 
