@@ -10,6 +10,8 @@ bootloader = "0.9.18"
 volatile = "0.2.7"
 spin = "0.5.1" # use the simplest lock
 # the newsest version  0.10.12 causes errors
+x86_64 = "0.14.2"
+# use this crate to invoke "in" and "out" instructions
 
 [dependencies.lazy_static]
 version = "1.0"
@@ -20,11 +22,7 @@ features = ["spin_no_std"]
 # 因此, 我们需要手动禁用栈展开, 因为反正现阶段我们也无需通过复杂的异常处理机制和栈展开来实现父进程的运行 
 # https://manishearth.github.io/blog/2017/01/11/rust-tidbits-what-is-a-lang-item/,  https://stackoverflow.com/questions/48982154/where-is-eh-personality-called
 
-
-# # 对应cargo build
-# [profile.dev]
-# panic = "abort"
-
-# # 对应cargo build --release
-# [profile.release]
-# panic = "abort"
+[package.metadata.bootimage]
+test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
+# 需要让qemu通过isa-debug-exit设备实现自动从系统退出, 而不是陷入测试函数的死循环中
+test-success-exit-code = 33  # 与QemuExitCode中的
