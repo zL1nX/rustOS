@@ -8,6 +8,7 @@
 use core::panic::PanicInfo;
 
 mod vga_buffer;
+mod serial;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
@@ -18,6 +19,7 @@ pub enum QemuExitCode {
 
 #[cfg(test)]
 fn test_runner(tests: &[&dyn Fn()]) {
+    serial_println!("Running {} tests", tests.len()); // 通过串口打印到宿主机系统的终端
     println!("Running {} tests", tests.len());
     for test in tests {
         test();
@@ -56,6 +58,7 @@ pub extern "C" fn _start()-> !{
 此处因为还没有任何处理逻辑, 因此只写个loop来满足编译器检查
 */
 
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(_info: &PanicInfo)->! {
     // PanicInfo includes panic_file, panic_lineno, available_error_message
@@ -63,9 +66,20 @@ fn panic(_info: &PanicInfo)->! {
     loop{} // for now
 }
 
+#[cfg(test)]
+#[panic_handler]
+fn panic(_info: &PanicInfo)->! {
+    serial_println!("[failed]\n");
+    serial_println!("Error: {}\n", _info);
+    exit_qemu(QemuExitCode::Fail);
+    loop {}
+}
+
 #[test_case]
 fn trivial_test() {
-    print!("This is a trivial test");
+    // print!("This is a trivial test");
+    serial_print!("trivial assertion... ");
     assert_eq!(1, 0);
-    print!("ok!");
+    //print!("ok!");
+    serial_println!("[ok]");
 }
