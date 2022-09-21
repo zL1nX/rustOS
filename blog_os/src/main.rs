@@ -74,12 +74,3 @@ fn panic(_info: &PanicInfo)->! {
     exit_qemu(QemuExitCode::Fail);
     loop {}
 }
-
-#[test_case]
-fn trivial_test() {
-    // print!("This is a trivial test");
-    serial_print!("trivial assertion... ");
-    assert_eq!(1, 0);
-    //print!("ok!");
-    serial_println!("[ok]");
-}
