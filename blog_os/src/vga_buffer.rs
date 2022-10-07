@@ -3,6 +3,10 @@ use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
 
+
+#[cfg(test)]
+use crate::{serial_print, serial_println};
+
 // VGA字符缓冲区是一个25行 x 80列的二维数组, 每个元素一个16bit长
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
@@ -161,3 +165,35 @@ pub fn _print(args: fmt::Arguments) {
 }
 
 // 自定义的_print函数调用write_fmt这个trait传入参数
+
+#[test_case]
+pub fn test_vga_simple() {
+    serial_println!("test_println_simple... ");
+    println!("test_println_simple output from VGA");
+    serial_println!("[ok]");
+}
+
+// 如果没有panic, 那控制台可以直接看到 ok
+
+#[test_case]
+pub fn test_vga_multiple_line() {
+    serial_println!("test_println_multiple_line... ");
+    for _ in 0..200 {
+        println!("test_println_simple output from VGA");
+    }
+    serial_println!("[ok]");
+}
+
+#[test_case]
+pub fn test_vga_checkch() {
+    serial_println!("test_println_check_char... ");
+
+    let s :&str = "This is a test string!";
+    println!("{}", s); // now print it to the vga buffer with a \n
+    for (i, c) in s.chars().enumerate() {
+        let output_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
+        assert_eq!(char::from(output_char.ascii_code), c);
+    }
+
+    serial_println!("[ok]");
+}
