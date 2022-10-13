@@ -5,11 +5,14 @@
 #![feature(custom_test_frameworks)]
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
+#![feature(abi_x86_interrupt)]
+
 
 use core::panic::PanicInfo;
 
 pub mod serial;
 pub mod vga_buffer;
+pub mod interrupt;
 
 // 设置为公有mod，这样一来我们在库的外部也一样能使用它们了，此时main中的这些函数就可以删掉了
 
