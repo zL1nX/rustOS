@@ -15,6 +15,10 @@ use blog_os::println;
 pub extern "C" fn _start()-> !{
     println!("Hello world from println {}", "!"); // 可正常使用println宏
     
+    blog_os::init();
+
+    x86_64::instructions::interrupts::int3();
+
     #[cfg(test)]
     test_main(); // 调用入口函数
     loop {}

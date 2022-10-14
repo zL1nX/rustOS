@@ -52,6 +52,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 #[cfg(test)]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
+    init();
     test_main();
     loop {}
 }
@@ -61,3 +62,9 @@ pub extern "C" fn _start() -> ! {
 fn panic(info: &PanicInfo) -> ! {
     test_panic_handler(info)
 }
+
+pub fn init() {
+    interrupt::init_idt();
+}
+
+// 再封装一层init到lib中, 这样一来这个函数就可以被复用了
