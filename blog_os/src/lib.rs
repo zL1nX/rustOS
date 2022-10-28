@@ -13,6 +13,7 @@ use core::panic::PanicInfo;
 pub mod serial;
 pub mod vga_buffer;
 pub mod interrupt;
+pub mod gdt;
 
 // 设置为公有mod，这样一来我们在库的外部也一样能使用它们了，此时main中的这些函数就可以删掉了
 
@@ -64,6 +65,7 @@ fn panic(info: &PanicInfo) -> ! {
 }
 
 pub fn init() {
+    gdt::init(); // 将gdt load进来
     interrupt::init_idt();
 }
 
