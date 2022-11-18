@@ -67,6 +67,10 @@ fn panic(info: &PanicInfo) -> ! {
 pub fn init() {
     gdt::init(); // 将gdt load进来
     interrupt::init_idt();
+    unsafe {
+        interrupt::PICS.lock().initialize();
+    }
+    x86_64::instructions::interrupts::enable(); // set external interrupts
 }
 
 // 再封装一层init到lib中, 这样一来这个函数就可以被复用了

@@ -17,14 +17,11 @@ pub extern "C" fn _start()-> !{
     
     blog_os::init();
 
-    fn stack_overflow() {
-        stack_overflow();
-    }
-    // 人为地进行无限制递归, 让程序爆栈, 从而测试double fault是否能被正确handle
-    stack_overflow();
-    
     #[cfg(test)]
     test_main(); // 调用入口函数
+
+    println!("It did not crash!");
+
     loop {}
 }  
 

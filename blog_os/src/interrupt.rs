@@ -2,7 +2,15 @@
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 use crate::println;
 use crate::gdt;
+use pic8259::ChainedPics;
+use spin;
 use lazy_static::lazy_static;
+
+pub const PIC_1_OFFSET: u8 = 32;
+pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8; // 给第一层那8个interrupt要用
+
+pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe {ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET)});
+// 自己重新定义个controller的offset, 用内置的chainedpics结构就能实现
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
