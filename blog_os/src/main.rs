@@ -22,7 +22,11 @@ pub extern "C" fn _start()-> !{
 
     println!("It did not crash!");
 
-    loop {}
+    loop {
+        use blog_os::print; // 用于测试print的lock状态
+        print!("-");
+        // 当timer interrupt发生要等print解锁但是发生死锁时, 会看到dash符号只输出了一点 (不死锁的话应该是一直打印) 
+    }
 }  
 
 

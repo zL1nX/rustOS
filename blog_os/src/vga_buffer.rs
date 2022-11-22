@@ -161,7 +161,13 @@ macro_rules! println {
 #[doc(hidden)] // _print是私有自定义函数, 但迫于宏导出得设置为pub, 因此干脆只让文档隐藏算了
 pub fn _print(args: fmt::Arguments) {
     use core::fmt::Write;
-    WRITER.lock().write_fmt(args).unwrap();
+    use x86_64::instructions::interrupts;
+
+    interrupts::without_interrupts(|| {
+        WRITER.lock().write_fmt(args).unwrap();
+    })
+    // 用without_interrupts来确保当Mutex是锁着的时候, 是不会有interrupt发生的 (从而防止发生死锁)
+    
 }
 
 // 自定义的_print函数调用write_fmt这个trait传入参数
