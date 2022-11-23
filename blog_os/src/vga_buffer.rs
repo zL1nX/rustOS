@@ -2,8 +2,6 @@ use volatile::Volatile;
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
-
-
 #[cfg(test)]
 use crate::{serial_print, serial_println};
 
@@ -192,14 +190,21 @@ pub fn test_vga_multiple_line() {
 
 #[test_case]
 pub fn test_vga_checkch() {
+    use core::fmt::Write;
+    use x86_64::instructions::interrupts;
+
     serial_println!("test_println_check_char... ");
 
     let s :&str = "This is a test string!";
-    println!("{}", s); // now print it to the vga buffer with a \n
-    for (i, c) in s.chars().enumerate() {
-        let output_char = WRITER.lock().buffer.chars[BUFFER_HEIGHT - 2][i].read();
-        assert_eq!(char::from(output_char.ascii_code), c);
-    }
 
+    interrupts::without_interrupts(|| {
+        let mut writer = WRITER.lock();
+        writeln!(writer, "\n{}", s).expect("writeln failed"); // writeln!能允许想locked的WRITER里写数据
+        // 同时, 先输出个\n来防止因为time handler输出了个. 把整个缓冲区位置污染了
+        for (i, c) in s.chars().enumerate() {
+            let output_char = writer.buffer.chars[BUFFER_HEIGHT - 2][i].read();
+            assert_eq!(char::from(output_char.ascii_code), c);
+        }
+    });
     serial_println!("[ok]");
 }
