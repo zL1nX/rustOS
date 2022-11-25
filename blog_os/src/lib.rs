@@ -46,7 +46,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     serial_println!("[failed]\n");
     serial_println!("Error: {}\n", info);
     exit_qemu(QemuExitCode::Failed);
-    loop {}
+    hlt_loop();
 }
 
 /// Entry point for `cargo xtest`
@@ -55,7 +55,7 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     init();
     test_main();
-    loop {}
+    hlt_loop();
 }
 
 #[cfg(test)]
@@ -74,3 +74,10 @@ pub fn init() {
 }
 
 // 再封装一层init到lib中, 这样一来这个函数就可以被复用了
+
+pub fn hlt_loop()->! {
+    loop {
+        x86_64::instructions::hlt(); // 通过instruction提供的api封装来防止CPU进行无限循环
+        //其实就是halt命令
+    }
+}

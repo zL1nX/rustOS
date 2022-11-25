@@ -21,12 +21,7 @@ pub extern "C" fn _start()-> !{
     test_main(); // 调用入口函数
 
     println!("It did not crash!");
-
-    loop {
-        use blog_os::print; // 用于测试print的lock状态
-        print!("-");
-        // 当timer interrupt发生要等print解锁但是发生死锁时, 会看到dash符号只输出了一点 (不死锁的话应该是一直打印) 
-    }
+    blog_os::hlt_loop(); // CPU不用一直无限循环了
 }  
 
 
@@ -41,7 +36,7 @@ pub extern "C" fn _start()-> !{
 fn panic(_info: &PanicInfo)->! {
     // PanicInfo includes panic_file, panic_lineno, available_error_message
     println!("{}", _info); // we can print some info (no actual content)
-    loop{} // for now
+    blog_os::hlt_loop();
 }
 
 #[cfg(test)]
