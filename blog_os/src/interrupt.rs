@@ -17,6 +17,7 @@ pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe {ChainedPics
 #[repr(u8)]
 pub enum InterruptIndex {
     Timer = PIC_1_OFFSET, // 第一个中断, 所以没offset
+    Keyboard, // 自然会PIC_1_OFFSET + 1, 故省去
 }
 
 impl InterruptIndex {
@@ -38,6 +39,7 @@ lazy_static! {
             // 设置double fault 的handler, 并且指定stack的index
         }
         idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler); // 给timer加上handler
+        idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
         idt
     };
 }
@@ -60,6 +62,38 @@ extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: InterruptStackFra
     print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8()); // 显式地告知PIC我们的handler function 已经结束了
+    }
+}
+
+extern "x86-interrupt" fn keyboard_interrupt_handler(stack_frame: InterruptStackFrame) {
+    
+    use x86_64::instructions::port::Port;
+
+    let mut p = Port::new(0x60); // PS/2键盘controller的data port
+    let scancode : u8 = unsafe {
+        p.read()
+    };
+
+    let key = match scancode {
+        0x02 => Some('1'),
+        0x03 => Some('2'),
+        0x04 => Some('3'),
+        0x05 => Some('4'),
+        0x06 => Some('5'),
+        0x07 => Some('6'),
+        0x08 => Some('7'),
+        0x09 => Some('8'),
+        0x0a => Some('9'),
+        0x0b => Some('0'),
+        _ => None,
+    }; // 根据scancode的映射表
+
+    if let Some(key) = key {
+        print!("{}", key); // 读出scancode后打印到屏幕上
+    }
+
+    unsafe {
+        PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());
     }
 }
 
