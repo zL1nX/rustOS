@@ -7,12 +7,12 @@
 
 use core::panic::PanicInfo;
 use blog_os::println;
+use bootloader::{BootInfo, entry_point};
 
+entry_point!(kernel_main); // 重新用entry point来规范我们的入口点函数签名, 让其能正确的被编译器识别为入口点函数
 
-// 由于去掉了no_std环境, 导致我们也不能用默认的Rust Runtime crt0来让程序初始化
-// 因此我们需要重新定义一个自己的入口点
-#[no_mangle] // name mangling, 这一选项防止编译器对函数签名进行重整, 导致链接器无法识别这一自定义入口
-pub extern "C" fn _start()-> !{
+// 所以也就无需原来的extern C, no mangle等宏了
+fn kernel_main(boot_info : &'static BootInfo)-> !{
     println!("Hello world from println {}", "!"); // 可正常使用println宏
     
     blog_os::init();
