@@ -6,23 +6,36 @@
 
 
 use core::panic::PanicInfo;
-use blog_os::println;
+use blog_os::{println, memory::active_level4_page_table};
 use bootloader::{BootInfo, entry_point};
+use x86_64::{VirtAddr, structures::paging::PageTable};
 
 entry_point!(kernel_main); // 重新用entry point来规范我们的入口点函数签名, 让其能正确的被编译器识别为入口点函数
 
 // 所以也就无需原来的extern C, no mangle等宏了
 fn kernel_main(boot_info : &'static BootInfo)-> !{
     println!("Hello world from println {}", "!"); // 可正常使用println宏
-    
     blog_os::init();
 
-    let ptr = 0x205613 as *mut u32;
-    
-    unsafe { let x = *ptr; }; // 尝试读一下
-    println!("read worked");
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let l4_table = unsafe { active_level4_page_table(phys_mem_offset) };
+    for (i, entry) in l4_table.iter().enumerate() {
+        if !entry.is_unused() {
+            // println!("L4 Entry {}: {:?}", i, entry); // 直接读取L4页表的地址, 权限等信息
 
-    unsafe {*ptr = 42; }; // 不安全的写操作
+            // 也可以根据每个L4的地址信息, 找更下一层的L3的页表地址信息, 整体的寻址方式与直接找L4是相同的
+            let phys = entry.frame().unwrap().start_address();
+            let virt = phys.as_u64() + boot_info.physical_memory_offset;
+            let ptr = VirtAddr::new(virt).as_mut_ptr();
+            let l3_table: &PageTable = unsafe { &*ptr};
+
+            for (j, l3_entry) in l3_table.iter().enumerate() {
+                if !l3_entry.is_unused() {
+                    println!("  L3 Entry {}: {:?}", j, entry);
+                }
+            }
+        }
+    }
 
     #[cfg(test)]
     test_main(); // 调用入口函数
