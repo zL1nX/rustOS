@@ -6,9 +6,9 @@
 
 
 use core::panic::PanicInfo;
-use blog_os::{println, memory::{active_level4_page_table, translate_addr}};
+use blog_os::{println, memory::{translate_addr, self}};
 use bootloader::{BootInfo, entry_point};
-use x86_64::{VirtAddr, structures::paging::PageTable};
+use x86_64::{VirtAddr, structures::paging::Translate};
 
 entry_point!(kernel_main); // 重新用entry point来规范我们的入口点函数签名, 让其能正确的被编译器识别为入口点函数
 
@@ -19,9 +19,10 @@ fn kernel_main(boot_info : &'static BootInfo)-> !{
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     let addresses = [0xb8000, 0x201008, 0x0100_0020_1a10, boot_info.physical_memory_offset]; // 列出一些真实地址进行测试
+    let mapper = unsafe { memory::init(phys_mem_offset)};
     for &addr in &addresses {
         let virt = VirtAddr::new(addr);
-        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
+        let phys = mapper.translate(virt); // 通过自带的Translate::translate函数来实现翻译, 而不用自己的翻译函数
         println!("{:?} -> {:?}", virt, phys);
     }
 
