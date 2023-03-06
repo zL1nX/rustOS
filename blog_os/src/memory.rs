@@ -1,4 +1,13 @@
-use x86_64::{structures::paging::{PageTable, frame, page_table::FrameError, OffsetPageTable}, VirtAddr, registers::control::Cr3, PhysAddr};
+use x86_64::{structures::paging::{PageTable, frame, page_table::FrameError, OffsetPageTable, PhysFrame, FrameAllocator, Size4KiB, Page, Mapper}, VirtAddr, registers::control::Cr3, PhysAddr};
+use x86_64::structures::paging::PageTableFlags as Flags;
+
+pub struct EmptyFrameAllocator;
+
+unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
+    fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
+        None // placeholder
+    }
+}
 
 pub unsafe fn init(physical_memory_offset: VirtAddr)->OffsetPageTable<'static>
 {
@@ -48,3 +57,15 @@ fn translate_addr_inner(addr: VirtAddr, physical_memory_offset: VirtAddr)-> Opti
 
 }
 
+pub fn create_example_mapping(page: Page, mapper: &mut OffsetPageTable, frame_allocator: &mut impl FrameAllocator<Size4KiB>)
+{
+    let frame = PhysFrame::containing_address(PhysAddr::new(0xb8000));
+    let flags = Flags::PRESENT | Flags::WRITABLE;
+
+    let map_to_result = unsafe {
+        mapper.map_to(page, frame, flags, frame_allocator) // 通过map to 函数来将一个虚拟页trivial地映射到给定的frame上
+    };
+    map_to_result.expect("map_to failed").flush(); //flush方法来将创建的页从TLB中flush出来确保其在#[must_used]属性下一定会被用到
+}
+
+// 目前的FrameAllocator只是一个dummy allocator
