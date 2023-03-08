@@ -1,11 +1,43 @@
+use bootloader::bootinfo::{MemoryMap, MemoryRegion, MemoryRegionType};
 use x86_64::{structures::paging::{PageTable, frame, page_table::FrameError, OffsetPageTable, PhysFrame, FrameAllocator, Size4KiB, Page, Mapper}, VirtAddr, registers::control::Cr3, PhysAddr};
 use x86_64::structures::paging::PageTableFlags as Flags;
 
 pub struct EmptyFrameAllocator;
+pub struct  BootInfoFrameAllocator {
+    memory_map: &'static MemoryMap,
+    next: usize,
+}
+
+impl BootInfoFrameAllocator {
+    pub unsafe fn init(memory_map: &'static MemoryMap) -> Self {
+        BootInfoFrameAllocator {
+            memory_map: memory_map,
+            next: 0,
+        }
+    }
+
+    fn usable_frames(&self)->impl Iterator<Item = PhysFrame> { // 使用impl让函数实现起来更容易
+        let regions = self.memory_map.iter();
+        let usable_regions = regions.filter(|r| r.region_type == MemoryRegionType::Usable);
+        // 找到可用的内存地址并将其地址提取出来
+        let regions_addr = usable_regions.map(|f| f.range.start_addr()..f.range.end_addr());
+        let frame_addr = regions_addr.flat_map(|f| f.step_by(4096));
+
+        frame_addr.map(|addr| PhysFrame::containing_address(PhysAddr::new(addr)))
+    }
+}
 
 unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
         None // placeholder
+    }
+}
+
+unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
+    fn allocate_frame(&mut self) -> Option<PhysFrame<Size4KiB>> {
+        let frame = self.usable_frames().nth(self.next + 1); // 直接取页出来
+        self.next += 1;
+        frame
     }
 }
 

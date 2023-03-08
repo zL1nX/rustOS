@@ -6,7 +6,7 @@
 
 
 use core::panic::PanicInfo;
-use blog_os::{println, memory::{translate_addr, self}};
+use blog_os::{println, memory::{translate_addr, self, BootInfoFrameAllocator}};
 use bootloader::{BootInfo, entry_point};
 use x86_64::{VirtAddr, structures::paging::{Translate, Page}};
 
@@ -20,7 +20,7 @@ fn kernel_main(boot_info : &'static BootInfo)-> !{
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
     
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
-    let mut frame_alloc = memory::EmptyFrameAllocator;
+    let mut frame_alloc = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
 
     let page = Page::containing_address(VirtAddr::new(0));
     memory::create_example_mapping(page, &mut mapper, &mut frame_alloc);
