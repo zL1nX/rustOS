@@ -110,8 +110,8 @@ extern "x86-interrupt" fn page_fault_handler(stack_frame: InterruptStackFrame, e
     hlt_loop(); // 手动暂停, 显式异常处理结束前都处于暂停状态
 }
 
-fn test_breakpoint_exception() {
-    x86_64::instructions::interrupts::int3();
-}
+// fn test_breakpoint_exception() {
+//     x86_64::instructions::interrupts::int3();
+// }
 
 

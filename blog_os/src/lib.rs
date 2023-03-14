@@ -7,6 +7,7 @@
 #![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
 
+extern crate alloc;
 
 use core::panic::PanicInfo;
 
@@ -18,6 +19,7 @@ pub mod vga_buffer;
 pub mod interrupt;
 pub mod gdt;
 pub mod memory;
+pub mod allocator;
 
 // 设置为公有mod，这样一来我们在库的外部也一样能使用它们了，此时main中的这些函数就可以删掉了
 

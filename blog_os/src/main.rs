@@ -6,9 +6,9 @@
 
 
 use core::panic::PanicInfo;
-use blog_os::{println, memory::{translate_addr, self, BootInfoFrameAllocator}};
+use blog_os::{println, memory::{self, BootInfoFrameAllocator}};
 use bootloader::{BootInfo, entry_point};
-use x86_64::{VirtAddr, structures::paging::{Translate, Page}};
+use x86_64::{VirtAddr, structures::paging::Page};
 
 entry_point!(kernel_main); // 重新用entry point来规范我们的入口点函数签名, 让其能正确的被编译器识别为入口点函数
 

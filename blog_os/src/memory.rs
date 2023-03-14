@@ -1,5 +1,5 @@
-use bootloader::bootinfo::{MemoryMap, MemoryRegion, MemoryRegionType};
-use x86_64::{structures::paging::{PageTable, frame, page_table::FrameError, OffsetPageTable, PhysFrame, FrameAllocator, Size4KiB, Page, Mapper}, VirtAddr, registers::control::Cr3, PhysAddr};
+use bootloader::bootinfo::{MemoryMap, MemoryRegionType};
+use x86_64::{structures::paging::{PageTable, page_table::FrameError, OffsetPageTable, PhysFrame, FrameAllocator, Size4KiB, Page, Mapper}, VirtAddr, registers::control::Cr3, PhysAddr};
 use x86_64::structures::paging::PageTableFlags as Flags;
 
 pub struct EmptyFrameAllocator;
