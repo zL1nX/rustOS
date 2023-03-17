@@ -1,5 +1,8 @@
 use core::{alloc::{GlobalAlloc, Layout}, ptr::null_mut};
 
+#[global_allocator]
+static ALLOCATOR: Dummy = Dummy; // 一个无field的struct, 直接声明
+
 pub struct Dummy;
 
 unsafe impl GlobalAlloc for Dummy {

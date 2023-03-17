@@ -6,6 +6,7 @@
 #![test_runner(crate::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 #![feature(abi_x86_interrupt)]
+#![feature(alloc_error_handler)]
 
 extern crate alloc;
 
@@ -54,6 +55,11 @@ pub fn test_panic_handler(info: &PanicInfo) -> ! {
     exit_qemu(QemuExitCode::Failed);
     hlt_loop();
 }
+
+#[alloc_error_handler]
+pub fn alloc_error_handler(layout: alloc::alloc::Layout)->! {
+    panic!("allocation error: {:?}", layout) // 现阶段什么都干不了, 直接panic
+} 
 
 #[cfg(test)]
 entry_point!(test_kernel_main);
