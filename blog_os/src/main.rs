@@ -8,8 +8,9 @@ extern crate alloc; // 在main中需要重新声明, 因为彼此都是独立的
 
 use core::panic::PanicInfo;
 use alloc::boxed::Box;
-use blog_os::println;
+use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator};
 use bootloader::{BootInfo, entry_point};
+use x86_64::VirtAddr;
 
 entry_point!(kernel_main); // 重新用entry point来规范我们的入口点函数签名, 让其能正确的被编译器识别为入口点函数
 
@@ -18,6 +19,14 @@ fn kernel_main(boot_info : &'static BootInfo)-> !{
     println!("Hello world from println {}", "!"); // 可正常使用println宏
     blog_os::init();
 
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe {
+        BootInfoFrameAllocator::init(&boot_info.memory_map)
+    };
+
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect_err("heap initialization failed");
+    
     let x = Box::new(41);
 
     #[cfg(test)]
