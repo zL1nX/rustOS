@@ -1,12 +1,12 @@
 use core::{alloc::{GlobalAlloc, Layout}, ptr::null_mut};
-
+use linked_list_allocator::LockedHeap;
 use x86_64::{structures::paging::{Mapper, Size4KiB, FrameAllocator, mapper::MapToError, Page, PageTable, PageTableFlags}, VirtAddr};
 
 pub const HEAP_START : usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE : usize = 100 * 1024; // 4KB
 
 #[global_allocator]
-static ALLOCATOR: Dummy = Dummy; // 一个无field的struct, 直接声明
+static ALLOCATOR: LockedHeap = LockedHeap::empty(); // 直接替换原来的Dummy
 
 pub struct Dummy;
 
@@ -40,6 +40,11 @@ pub fn init_heap(mapper: &mut impl Mapper<Size4KiB>, allocator: &mut impl FrameA
             mapper.map_to(page, frame, flags, allocator)?.flush();
         }
     }
+
+    unsafe {
+        ALLOCATOR.lock().init(HEAP_START, HEAP_SIZE); // 用lock来进行堆Allocator的初始化
+    }
+    
     Ok(())
     // 通过Rust中的问号机制来提前将错误返回
 }
