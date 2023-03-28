@@ -47,7 +47,7 @@ fn init_idt_test() {
     TEST_IDT.load(); // 这个单独的IDT被load了进来
 }
 
-extern "x86-interrupt" fn test_double_fault_handler(stack_frame: InterruptStackFrame, _error_code : u64) -> !{
+extern "x86-interrupt" fn test_double_fault_handler(_stack_frame: InterruptStackFrame, _error_code : u64) -> !{
     serial_println!("[ok]");
     exit_qemu(QemuExitCode::Success);
     loop {}

@@ -59,14 +59,14 @@ extern "x86-interrupt" fn double_fault_handler(stack_frame: InterruptStackFrame,
     panic!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
 }
 
-extern "x86-interrupt" fn timer_interrupt_handler(stack_frame: InterruptStackFrame) {
+extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFrame) {
     print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Timer.as_u8()); // 显式地告知PIC我们的handler function 已经结束了
     }
 }
 
-extern "x86-interrupt" fn keyboard_interrupt_handler(stack_frame: InterruptStackFrame) {
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
     
     use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1}; // 现成的crate, 太赖了
     use spin::Mutex;

@@ -3,7 +3,7 @@ use core::fmt;
 use lazy_static::lazy_static;
 use spin::Mutex;
 #[cfg(test)]
-use crate::{serial_print, serial_println};
+use crate::serial_println;
 
 // VGA字符缓冲区是一个25行 x 80列的二维数组, 每个元素一个16bit长
 const BUFFER_HEIGHT: usize = 25;
