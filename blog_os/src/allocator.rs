@@ -2,13 +2,12 @@ use core::{alloc::{GlobalAlloc, Layout}, ptr::null_mut};
 use linked_list_allocator::LockedHeap;
 use x86_64::{structures::paging::{Mapper, Size4KiB, FrameAllocator, mapper::MapToError, Page, PageTableFlags}, VirtAddr};
 
+use self::bump::BumpAllocator;
+
 pub mod bump;
 
 pub const HEAP_START : usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE : usize = 100 * 1024; // 4KB
-
-#[global_allocator]
-static ALLOCATOR: LockedHeap = LockedHeap::empty(); // 直接替换原来的Dummy
 
 pub struct Dummy;
 
@@ -23,6 +22,29 @@ unsafe impl GlobalAlloc for Dummy {
 }
 // 一个最基本的DummyAllocator, 单纯的把接口给实现以下
 
+pub struct Locked<A> {
+    inner: spin::Mutex<A>
+}
+
+impl<A> Locked<A> {
+    pub const fn new(inner: A) ->Self {
+        Locked {
+            inner: spin::Mutex::new(inner)
+        }
+    }
+
+    pub fn lock(&self) -> spin::MutexGuard<A> {
+        self.inner.lock()
+    }
+}
+
+fn align_up(addr: usize, align: usize) -> usize {
+    (addr + align - 1) & !(align - 1)
+}
+
+
+#[global_allocator]
+static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new()); // 直接替换原来的Dummy为自己实现的BumpAllocator
 
 pub fn init_heap(mapper: &mut impl Mapper<Size4KiB>, allocator: &mut impl FrameAllocator<Size4KiB>)
 ->Result<(), MapToError<Size4KiB>>

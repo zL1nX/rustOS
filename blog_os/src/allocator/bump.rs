@@ -1,20 +1,5 @@
 use core::{alloc::{GlobalAlloc, Layout}, ptr};
-
-pub struct Locked<A> {
-    inner: spin::Mutex<A>
-}
-
-impl<A> Locked<A> {
-    pub const fn new(inner: A) ->Self {
-        Locked {
-            inner: spin::Mutex::new(inner)
-        }
-    }
-
-    pub fn lock(&self) -> spin::MutexGuard<A> {
-        self.inner.lock()
-    }
-}
+use super::{Locked, align_up};
 
 // 用泛型来实现自己的spin Mutex方法, 从而用于当前这个crate中, 相当于在spin外面包一层
 
@@ -35,9 +20,9 @@ impl BumpAllocator {
         }
     }
 
-    pub unsafe fn init(&mut self, heap_start : usize, heap_end: usize) {
+    pub unsafe fn init(&mut self, heap_start : usize, heap_size: usize) {
         self.heap_start = heap_start;
-        self.heap_end = heap_end;
+        self.heap_end = heap_start.saturating_add(heap_size);
         self.next = heap_start;  // 指向第一个没被用的空间位置
     }
 }
@@ -50,11 +35,11 @@ unsafe impl GlobalAlloc for Locked<BumpAllocator> { // 用自己定义的方法
 
         let alloc_end = match alloc_start.checked_add(layout.size()) { // 防止溢出
             Some(end) => end,
-            None => return ptr::null_mut()
+            None => return ptr::null_mut(),
         };
 
         if alloc_end > bump.heap_end {
-            return ptr::null_mut()
+            ptr::null_mut()
         }else {
             bump.next = alloc_end;
             bump.allocations += 1;
@@ -71,15 +56,15 @@ unsafe impl GlobalAlloc for Locked<BumpAllocator> { // 用自己定义的方法
     }
 }
 
-fn align_up(addr: usize, align: usize) -> usize {
-    let remainder = addr % align;
+// fn align_up(addr: usize, align: usize) -> usize {
+//     let remainder = addr % align;
 
-    if remainder == 0 {
-        addr
-    }else {
-        addr - remainder + align // + align 保证新的地址不比原地址小
-    }
-}
+//     if remainder == 0 {
+//         addr
+//     }else {
+//         addr - remainder + align // + align 保证新的地址不比原地址小
+//     }
+// }
 
 // 追求高效实现可以这么写
 
