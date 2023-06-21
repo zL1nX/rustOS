@@ -1,7 +1,5 @@
-use core::mem;
-use super::align_up;
-
-use alloc::boxed::Box;
+use core::{mem, alloc::{GlobalAlloc, Layout}, ptr};
+use super::{align_up, Locked};
 
 struct ListNode {
     size: usize,
@@ -46,6 +44,13 @@ impl LinkedListAllocator {
         // 所以要么当前region恰好满足alloc的需求, 要么这块region分配完之后, 剩下的空间还能用来承载它自己的listnode
         Ok(alloc_start)
     }
+
+    // 保证每个分配出去的block都能容纳一个listnode, 这样后续被free掉之后, 就能加到链表里
+    fn size_align(layout : Layout)-> (usize, usize) {
+        let layout = layout.align_to(mem::size_of::<ListNode>()).expect("alignment failed").pad_to_align(); // 保证至少是整数倍的地址开始
+        let size = layout.size().max(mem::size_of::<ListNode>()); // 保证大小至少为一个listnode的大小
+        (size, layout.align())
+    }
 }
 
 impl LinkedListAllocator {
@@ -72,7 +77,7 @@ impl LinkedListAllocator {
     // 只会被调用一次, 因为外部需要保证heap的内存是valid的, 所以这个函数是unsafe 的
 
     // 本质是在遍历链表寻找合适的内存node, 然后进行节点的删除
-    fn find_free_region(&mut self, size: usize, align: usize)-> Option<(&'static mut ListNode, usize)> {
+    fn find_region(&mut self, size: usize, align: usize)-> Option<(&'static mut ListNode, usize)> {
         let mut current = &mut self.head;
         while let Some(ref mut region) = current.next {
             if let Ok(alloc_start) = Self::alloc_from_region(&region, size, align) {
@@ -86,5 +91,30 @@ impl LinkedListAllocator {
             }
         }
         None
+    }
+}
+
+unsafe impl GlobalAlloc for Locked<LinkedListAllocator> {
+    unsafe fn alloc(&self, layout: core::alloc::Layout) -> *mut u8 {
+        let (size, align) = LinkedListAllocator::size_align(layout);
+        let mut allocator = self.lock();
+
+        if let Some((region, alloc_start)) = allocator.find_region(size, align) {
+            let alloc_end = alloc_start.checked_add(size).expect("overflow");
+            let execess_size = region.end_addr() - alloc_end;
+            if execess_size > 0 {
+                allocator.add_free_region(alloc_end, size); // 如果这块内容还足够多, 那也先加进来维护, 这样不浪费内存
+            }
+            alloc_start as *mut u8
+        }
+        else {
+            ptr::null_mut()
+        }
+    }
+
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: core::alloc::Layout) {
+        let (size, _) = LinkedListAllocator::size_align(layout);
+
+        self.lock().add_free_region(ptr as usize, size); // 把free掉的内存加进来维护进去
     }
 }
