@@ -54,7 +54,7 @@ impl LinkedListAllocator {
 }
 
 impl LinkedListAllocator {
-    const fn new() -> Self {
+    pub const fn new() -> Self {
         Self { head: ListNode::new(0) }
     }
 
@@ -103,7 +103,7 @@ unsafe impl GlobalAlloc for Locked<LinkedListAllocator> {
             let alloc_end = alloc_start.checked_add(size).expect("overflow");
             let execess_size = region.end_addr() - alloc_end;
             if execess_size > 0 {
-                allocator.add_free_region(alloc_end, size); // 如果这块内容还足够多, 那也先加进来维护, 这样不浪费内存
+                allocator.add_free_region(alloc_end, execess_size); // 如果这块内容还足够多, 那也先加进来维护, 这样不浪费内存
             }
             alloc_start as *mut u8
         }
