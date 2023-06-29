@@ -6,6 +6,7 @@ use self::linked_list::LinkedListAllocator;
 
 pub mod bump;
 pub mod linked_list;
+pub mod fixed_size_block;
 
 pub const HEAP_START : usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE : usize = 100 * 1024; // 4KB
