@@ -2,7 +2,8 @@ use core::{alloc::{GlobalAlloc, Layout}, ptr::null_mut};
 use x86_64::{structures::paging::{Mapper, Size4KiB, FrameAllocator, mapper::MapToError, Page, PageTableFlags}, VirtAddr};
 
 //use self::bump::BumpAllocator;
-use self::linked_list::LinkedListAllocator;
+// use self::linked_list::LinkedListAllocator;
+use self::fixed_size_block::FixedSizeBlockAllocator;
 
 pub mod bump;
 pub mod linked_list;
@@ -46,7 +47,7 @@ fn align_up(addr: usize, align: usize) -> usize {
 
 
 #[global_allocator]
-static ALLOCATOR: Locked<LinkedListAllocator> = Locked::new(LinkedListAllocator::new()); // 直接替换原来的Dummy为自己实现的BumpAllocator
+static ALLOCATOR: Locked<FixedSizeBlockAllocator> = Locked::new(FixedSizeBlockAllocator::new()); // 直接替换原来的Dummy为自己实现的BumpAllocator
 
 pub fn init_heap(mapper: &mut impl Mapper<Size4KiB>, allocator: &mut impl FrameAllocator<Size4KiB>)
 ->Result<(), MapToError<Size4KiB>>
