@@ -69,3 +69,12 @@ fn panic(_info: &PanicInfo)->! {
 fn panic(_info: &PanicInfo)->! {
     blog_os::test_panic_handler(_info)
 }
+
+async fn async_number() -> u32 {
+    42
+}
+
+async fn example_task() -> () {
+    let number = async_number().await;
+    println!("My async number is: {}", number);
+}   

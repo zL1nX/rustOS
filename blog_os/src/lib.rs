@@ -22,6 +22,7 @@ pub mod interrupt;
 pub mod gdt;
 pub mod memory;
 pub mod allocator;
+pub mod task;
 
 // 设置为公有mod，这样一来我们在库的外部也一样能使用它们了，此时main中的这些函数就可以删掉了
 
