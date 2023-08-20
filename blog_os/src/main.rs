@@ -7,8 +7,7 @@
 extern crate alloc; // 在main中需要重新声明, 因为彼此都是独立的crate
 
 use core::panic::PanicInfo;
-use alloc::{boxed::Box, vec::Vec, vec, rc::Rc};
-use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator};
+use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator, task::{Task, simple_executor::SimpleExecutor}};
 use bootloader::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
@@ -26,21 +25,10 @@ fn kernel_main(boot_info : &'static BootInfo)-> !{
     };
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
-    
-    let x = Box::new(41);
-    println!("Heap value at: {:p}", x);
 
-    let mut v = Vec::new();
-    for i in 0..500 {
-        v.push(i);
-    }
-    println!("Vector on Heap: {:p}", &v);
-
-    let ref_count = Rc::new(vec![1, 2, 3]);
-    let cloned_ref = ref_count.clone();
-    println!("Current count of vec ref: {}", Rc::strong_count(&ref_count));
-    core::mem::drop(cloned_ref);
-    println!("Current count of vec ref: {} (after drop)", Rc::strong_count(&ref_count));
+    let mut executor = SimpleExecutor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.run();
 
     #[cfg(test)]
     test_main(); // 调用入口函数
