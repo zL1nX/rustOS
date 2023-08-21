@@ -68,30 +68,15 @@ extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: InterruptStackFr
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
     
-    use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1}; // 现成的crate, 太赖了
-    use spin::Mutex;
     use x86_64::instructions::port::Port;
 
-    lazy_static!{
-        static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> = 
-        Mutex::new(Keyboard::new(layouts::Us104Key, ScancodeSet1, HandleControl::Ignore));
-    }
-
     let mut p = Port::new(0x60); // PS/2键盘controller的data port
-    let mut keyboard = KEYBOARD.lock();
 
     let scancode: u8 = unsafe {
         p.read()
     };
-
-    if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
-        if let Some(key) = keyboard.process_keyevent(key_event) {
-            match key {
-                DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(raw_key) => print!("{:?}", raw_key)
-            }
-        }
-    }
+    crate::task::keyboard::add_scancode(scancode);
+    // 此处不需要原来的Keyboard处理方式, 这里使用新的基于异步处理的task机制
 
     unsafe {
         PICS.lock().notify_end_of_interrupt(InterruptIndex::Keyboard.as_u8());

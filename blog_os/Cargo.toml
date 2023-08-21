@@ -3,8 +3,6 @@ name = "blog_os"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 bootloader = { version="0.9.23", features=["map_physical_memory"]} 
 # 让Bootloader 支持
@@ -29,6 +27,20 @@ features = ["spin_no_std"]
 # 由于no_std环境中, 原有的用于在编译器fail时创建栈展开环境的eh_personality语言项也没有被实现
 # 因此, 我们需要手动禁用栈展开, 因为反正现阶段我们也无需通过复杂的异常处理机制和栈展开来实现父进程的运行 
 # https://manishearth.github.io/blog/2017/01/11/rust-tidbits-what-is-a-lang-item/,  https://stackoverflow.com/questions/48982154/where-is-eh-personality-called
+
+[dependencies.crossbeam-queue]
+version = "0.2.1" # 需要用旧版的, 新版的语法和类型会与blog有很大不同
+default-features = false  # 为了与no_std的环境兼容
+features = ["alloc"]
+
+[dependencies.conquer-once]
+version = "0.3.1"
+default-features = false
+
+[dependencies.futures-util]
+version = "0.3.4"
+default-features = false
+features = ["alloc"]
 
 [package.metadata.bootimage]
 test-args = ["-device", "isa-debug-exit,iobase=0xf4,iosize=0x04", "-serial", "stdio"]

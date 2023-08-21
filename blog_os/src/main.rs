@@ -7,7 +7,7 @@
 extern crate alloc; // 在main中需要重新声明, 因为彼此都是独立的crate
 
 use core::panic::PanicInfo;
-use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator, task::{Task, simple_executor::SimpleExecutor}};
+use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator, task::{Task, simple_executor::SimpleExecutor, keyboard}};
 use bootloader::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
@@ -26,15 +26,20 @@ fn kernel_main(boot_info : &'static BootInfo)-> !{
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-    let mut executor = SimpleExecutor::new();
-    executor.spawn(Task::new(example_task()));
-    executor.run();
 
     #[cfg(test)]
     test_main(); // 调用入口函数
 
     println!("It did not crash!");
+
+    let mut executor = SimpleExecutor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::press_keyboard()));
+    executor.run();
+    
     blog_os::hlt_loop(); // CPU不用一直无限循环了
+
+    
 }  
 
 
