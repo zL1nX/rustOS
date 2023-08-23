@@ -7,14 +7,14 @@
 extern crate alloc; // 在main中需要重新声明, 因为彼此都是独立的crate
 
 use core::panic::PanicInfo;
-use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator, task::{Task, simple_executor::SimpleExecutor, keyboard}};
+use blog_os::{println, memory::{self, BootInfoFrameAllocator}, allocator, task::{Task, keyboard, executor::Executor}};
 use bootloader::{BootInfo, entry_point};
 use x86_64::VirtAddr;
 
 entry_point!(kernel_main); // 重新用entry point来规范我们的入口点函数签名, 让其能正确的被编译器识别为入口点函数
 
 // 所以也就无需原来的extern C, no mangle等宏了
-fn kernel_main(boot_info : &'static BootInfo)-> !{
+fn kernel_main(boot_info : &'static BootInfo)-> ! {
     println!("Hello world from println {}", "!"); // 可正常使用println宏
     blog_os::init();
 
@@ -26,22 +26,17 @@ fn kernel_main(boot_info : &'static BootInfo)-> !{
 
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
-
     #[cfg(test)]
     test_main(); // 调用入口函数
 
-    println!("It did not crash!");
-
-    let mut executor = SimpleExecutor::new();
+    let mut executor = Executor::new();
     executor.spawn(Task::new(example_task()));
     executor.spawn(Task::new(keyboard::press_keyboard()));
     executor.run();
-    
-    blog_os::hlt_loop(); // CPU不用一直无限循环了
 
-    
+    println!("It did not crash!");
+    blog_os::hlt_loop();
 }  
-
 
 /*
 在no std环境中, 标准库中的panic handler函数将无法被使用
